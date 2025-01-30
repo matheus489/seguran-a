@@ -6,8 +6,19 @@ from encryption import SymmetricEncryption, AsymmetricEncryption
 import tkinter.ttk as ttk
 import logging
 
-# Configuração do logger
-logging.basicConfig(filename='access.log', level=logging.INFO,
+# Criptografar logs antes de salvar
+class EncryptedFileHandler(logging.FileHandler):
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            encrypted_msg = self.asymmetric_encryption.encrypt(msg.encode())
+            with open(self.baseFilename, 'ab') as file:
+                file.write(encrypted_msg + b'\n')
+        except Exception:
+            self.handleError(record)
+
+# Substituir o manipulador de arquivo padrão pelo criptografado
+logging.basicConfig(handlers=[EncryptedFileHandler('access.log', 'a')], level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 class App:

@@ -1,6 +1,7 @@
 # Arquivo para gerenciar perfis de usuário e autenticação
 
 import json
+from encryption import SymmetricEncryption
 
 class User:
     def __init__(self, username, password, role, permissions=None):
@@ -17,6 +18,7 @@ class AccessControl:
             'user': ['encrypt', 'decrypt'],
             'guest': []
         }
+        self.symmetric_encryption = SymmetricEncryption(key=b'Sixteen byte key')
         self.load_users()
 
     def add_user(self, username, password, role, permissions=None):
