@@ -153,6 +153,9 @@ class App:
         self.decrypt_file_rsa_button = tk.Button(file_upload_frame, text="Descriptografar Arquivo com RSA", command=self.decrypt_file_rsa)
         self.decrypt_file_rsa_button.pack()
 
+        self.back_to_login_button = tk.Button(self.encryption_window, text="Voltar para Login", command=self.back_to_login)
+        self.back_to_login_button.pack(pady=10)
+
     def encrypt_data_aes(self):
         if hasattr(self, 'current_user'):
             text = self.text_entry.get().encode()
@@ -220,6 +223,10 @@ class App:
             with open(file_path[:-8] + ".txt", 'wb') as file:
                 file.write(decrypted_data)
             messagebox.showinfo("Sucesso", "Arquivo descriptografado com RSA com sucesso.")
+
+    def back_to_login(self):
+        self.encryption_window.destroy()
+        self.root.deiconify()
 
 if __name__ == "__main__":
     root = tk.Tk()
