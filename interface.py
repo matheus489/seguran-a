@@ -1,6 +1,6 @@
 # Interface gráfica usando tkinter
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 from access_control import AccessControl
 from encryption import SymmetricEncryption, AsymmetricEncryption
 import tkinter.ttk as ttk
@@ -128,6 +128,31 @@ class App:
         self.history_text = tk.Text(history_frame, height=10, width=50)
         self.history_text.pack()
 
+        # Aba de Upload de Arquivo
+        file_upload_frame = ttk.Frame(notebook)
+        notebook.add(file_upload_frame, text='Upload de Arquivo')
+
+        self.upload_label = tk.Label(file_upload_frame, text="Selecione um arquivo .txt:")
+        self.upload_label.pack()
+
+        self.file_path_entry = tk.Entry(file_upload_frame, width=50)
+        self.file_path_entry.pack()
+
+        self.browse_button = tk.Button(file_upload_frame, text="Procurar", command=self.browse_file)
+        self.browse_button.pack()
+
+        self.encrypt_file_aes_button = tk.Button(file_upload_frame, text="Criptografar Arquivo com AES", command=self.encrypt_file_aes)
+        self.encrypt_file_aes_button.pack_forget()
+
+        self.decrypt_file_aes_button = tk.Button(file_upload_frame, text="Descriptografar Arquivo com AES", command=self.decrypt_file_aes)
+        self.decrypt_file_aes_button.pack_forget()
+
+        self.encrypt_file_rsa_button = tk.Button(file_upload_frame, text="Criptografar Arquivo com RSA", command=self.encrypt_file_rsa)
+        self.encrypt_file_rsa_button.pack()
+
+        self.decrypt_file_rsa_button = tk.Button(file_upload_frame, text="Descriptografar Arquivo com RSA", command=self.decrypt_file_rsa)
+        self.decrypt_file_rsa_button.pack()
+
     def encrypt_data_aes(self):
         if hasattr(self, 'current_user'):
             text = self.text_entry.get().encode()
@@ -163,6 +188,38 @@ class App:
             messagebox.showinfo("Descriptografia Assimétrica", f"RSA Descriptografado: {decrypted_data}")
         else:
             messagebox.showwarning("Acesso Negado", "Você precisa estar logado para descriptografar dados.")
+
+    def browse_file(self):
+        file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
+        if file_path:
+            self.file_path_entry.delete(0, tk.END)
+            self.file_path_entry.insert(0, file_path)
+
+    def encrypt_file_aes(self):
+        pass
+
+    def decrypt_file_aes(self):
+        pass
+
+    def encrypt_file_rsa(self):
+        file_path = self.file_path_entry.get()
+        if file_path:
+            with open(file_path, 'rb') as file:
+                data = file.read()
+            ciphertext = self.asymmetric_encryption.encrypt(data)
+            with open(file_path + ".rsa.txt", 'wb') as file:
+                file.write(ciphertext)
+            messagebox.showinfo("Sucesso", "Arquivo criptografado com RSA com sucesso.")
+
+    def decrypt_file_rsa(self):
+        file_path = self.file_path_entry.get()
+        if file_path and file_path.endswith('.rsa.txt'):
+            with open(file_path, 'rb') as file:
+                ciphertext = file.read()
+            decrypted_data = self.asymmetric_encryption.decrypt(ciphertext)
+            with open(file_path[:-8] + ".txt", 'wb') as file:
+                file.write(decrypted_data)
+            messagebox.showinfo("Sucesso", "Arquivo descriptografado com RSA com sucesso.")
 
 if __name__ == "__main__":
     root = tk.Tk()
