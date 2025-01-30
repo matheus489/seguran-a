@@ -41,6 +41,9 @@ class App:
 
         self.create_widgets()
 
+        # Remover duplicatas ao carregar usuários
+        self.access_control.users = list({user.username: user for user in self.access_control.users}.values())
+
     def create_widgets(self):
         # Frame para login
         login_frame = tk.Frame(self.root, padx=20, pady=20, bg='#f0f0f0')
@@ -95,10 +98,12 @@ class App:
         selected_index = self.requests_listbox.curselection()
         if selected_index:
             username, password = self.registration_requests.pop(selected_index[0])
-            self.access_control.add_user(username, password, 'user')
+            # Obter permissões configuradas para o usuário
+            user_permissions = [perm for perm, var in self.permission_vars.items() if var.get()]
+            self.access_control.add_user(username, password, 'user', user_permissions)
             self.requests_listbox.delete(selected_index)
-            logging.info(f'Usuário {username} aprovado')
-            messagebox.showinfo("Aprovação", f"Usuário {username} aprovado.")
+            logging.info(f'Usuário {username} aprovado com permissões: {user_permissions}')
+            messagebox.showinfo("Aprovação", f"Usuário {username} aprovado com permissões: {user_permissions}.")
 
     def reject_user(self):
         selected_index = self.requests_listbox.curselection()
@@ -115,32 +120,48 @@ class App:
         self.permissions_label = ttk.Label(self.permissions_window, text="Configurações de Permissões")
         self.permissions_label.pack(pady=10)
 
-        # Permissões disponíveis
-        permissions = ['add_user', 'remove_user', 'view_logs', 'manage_permissions', 'encrypt', 'decrypt']
+        # Lista de usuários
+        self.user_listbox = tk.Listbox(self.permissions_window)
+        self.user_listbox.pack(fill='x', padx=10, pady=5)
+        for user in self.access_control.users:
+            self.user_listbox.insert(tk.END, user.username)
 
-        # Dicionário para armazenar os botões de seleção
-        self.permission_vars = {
-            'admin': {perm: tk.BooleanVar() for perm in permissions},
-            'user': {perm: tk.BooleanVar() for perm in permissions},
-            'guest': {perm: tk.BooleanVar() for perm in permissions}
-        }
+        self.user_listbox.bind('<<ListboxSelect>>', self.display_user_permissions)
 
-        # Criar botões de seleção para cada permissão
-        for role, vars in self.permission_vars.items():
-            role_frame = ttk.LabelFrame(self.permissions_window, text=role.capitalize())
-            role_frame.pack(fill='x', padx=10, pady=5)
-            for perm, var in vars.items():
-                check = ttk.Checkbutton(role_frame, text=perm, variable=var)
-                check.pack(anchor='w')
+        # Frame para permissões
+        self.permissions_frame = ttk.Frame(self.permissions_window)
+        self.permissions_frame.pack(fill='x', padx=10, pady=5)
 
         self.save_permissions_button = ttk.Button(self.permissions_window, text="Salvar", command=self.save_permissions)
         self.save_permissions_button.pack(pady=10)
 
+    def display_user_permissions(self, event):
+        selected_index = self.user_listbox.curselection()
+        if selected_index:
+            username = self.user_listbox.get(selected_index)
+            user = next((u for u in self.access_control.users if u.username == username), None)
+            if user:
+                # Limpar permissões anteriores
+                for widget in self.permissions_frame.winfo_children():
+                    widget.destroy()
+
+                # Criar botões de seleção para cada permissão
+                permissions = ['add_user', 'remove_user', 'view_logs', 'encrypt', 'decrypt']
+                self.permission_vars = {perm: tk.BooleanVar(value=(perm in user.permissions)) for perm in permissions}
+
+                for perm, var in self.permission_vars.items():
+                    check = ttk.Checkbutton(self.permissions_frame, text=perm, variable=var)
+                    check.pack(anchor='w')
+
     def save_permissions(self):
-        # Lógica para salvar as permissões configuradas
-        for role, vars in self.permission_vars.items():
-            self.access_control.permissions[role] = [perm for perm, var in vars.items() if var.get()]
-        messagebox.showinfo("Sucesso", "Permissões salvas com sucesso.")
+        selected_index = self.user_listbox.curselection()
+        if selected_index:
+            username = self.user_listbox.get(selected_index)
+            user = next((u for u in self.access_control.users if u.username == username), None)
+            if user:
+                user.permissions = [perm for perm, var in self.permission_vars.items() if var.get()]
+                self.access_control.save_users()
+                messagebox.showinfo("Sucesso", "Permissões salvas com sucesso.")
 
     def authenticate_user(self):
         username = self.username_entry.get()
@@ -226,40 +247,40 @@ class App:
         self.back_to_login_button.pack(pady=10)
 
     def encrypt_data_aes(self):
-        if hasattr(self, 'current_user'):
+        if hasattr(self, 'current_user') and self.access_control.authorize(self.current_user, 'encrypt'):
             text = self.text_entry.get().encode()
             symmetric_encryption = SymmetricEncryption(key=b'Sixteen byte key')
             self.nonce, self.ciphertext, self.tag = symmetric_encryption.encrypt(text)
             self.history_text.insert(tk.END, f"AES Criptografado: {self.ciphertext}\n")
             messagebox.showinfo("Criptografia Simétrica", f"AES Criptografado: {self.ciphertext}")
         else:
-            messagebox.showwarning("Acesso Negado", "Você precisa estar logado para criptografar dados.")
+            messagebox.showwarning("Acesso Negado", "Você não tem permissão para criptografar dados.")
 
     def decrypt_data_aes(self):
-        if hasattr(self, 'current_user'):
+        if hasattr(self, 'current_user') and self.access_control.authorize(self.current_user, 'decrypt'):
             symmetric_encryption = SymmetricEncryption(key=b'Sixteen byte key')
             decrypted_data = symmetric_encryption.decrypt(self.nonce, self.ciphertext, self.tag)
             self.history_text.insert(tk.END, f"AES Descriptografado: {decrypted_data}\n")
             messagebox.showinfo("Descriptografia Simétrica", f"AES Descriptografado: {decrypted_data}")
         else:
-            messagebox.showwarning("Acesso Negado", "Você precisa estar logado para descriptografar dados.")
+            messagebox.showwarning("Acesso Negado", "Você não tem permissão para descriptografar dados.")
 
     def encrypt_data_rsa(self):
-        if hasattr(self, 'current_user'):
+        if hasattr(self, 'current_user') and self.access_control.authorize(self.current_user, 'encrypt'):
             text = self.text_entry.get().encode()
             self.ciphertext_rsa = self.asymmetric_encryption.encrypt(text)
             self.history_text.insert(tk.END, f"RSA Criptografado: {self.ciphertext_rsa}\n")
             messagebox.showinfo("Criptografia Assimétrica", f"RSA Criptografado: {self.ciphertext_rsa}")
         else:
-            messagebox.showwarning("Acesso Negado", "Você precisa estar logado para criptografar dados.")
+            messagebox.showwarning("Acesso Negado", "Você não tem permissão para criptografar dados.")
 
     def decrypt_data_rsa(self):
-        if hasattr(self, 'current_user'):
+        if hasattr(self, 'current_user') and self.access_control.authorize(self.current_user, 'decrypt'):
             decrypted_data = self.asymmetric_encryption.decrypt(self.ciphertext_rsa)
             self.history_text.insert(tk.END, f"RSA Descriptografado: {decrypted_data}\n")
             messagebox.showinfo("Descriptografia Assimétrica", f"RSA Descriptografado: {decrypted_data}")
         else:
-            messagebox.showwarning("Acesso Negado", "Você precisa estar logado para descriptografar dados.")
+            messagebox.showwarning("Acesso Negado", "Você não tem permissão para descriptografar dados.")
 
     def browse_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])

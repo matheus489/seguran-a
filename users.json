@@ -1,0 +1,1 @@
+[{"username": "admin", "password": "admin", "role": "admin", "permissions": []}, {"username": "user", "password": "user", "role": "user", "permissions": ["encrypt", "decrypt"]}, {"username": "guest", "password": "guest", "role": "guest", "permissions": []}, {"username": "oi", "password": "oi", "role": "user", "permissions": []}]

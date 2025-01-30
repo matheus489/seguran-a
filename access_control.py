@@ -1,10 +1,13 @@
 # Arquivo para gerenciar perfis de usuário e autenticação
 
+import json
+
 class User:
-    def __init__(self, username, password, role):
+    def __init__(self, username, password, role, permissions=None):
         self.username = username
         self.password = password
         self.role = role
+        self.permissions = permissions if permissions is not None else []
 
 class AccessControl:
     def __init__(self):
@@ -14,10 +17,12 @@ class AccessControl:
             'user': ['encrypt', 'decrypt'],
             'guest': []
         }
+        self.load_users()
 
-    def add_user(self, username, password, role):
-        user = User(username, password, role)
+    def add_user(self, username, password, role, permissions=None):
+        user = User(username, password, role, permissions)
         self.users.append(user)
+        self.save_users()
 
     def authenticate(self, username, password):
         for user in self.users:
@@ -26,4 +31,24 @@ class AccessControl:
         return None
 
     def authorize(self, user, action):
-        return action in self.permissions.get(user.role, []) 
+        return action in user.permissions
+
+    def save_users(self):
+        with open('users.json', 'w') as file:
+            json.dump([{
+                'username': user.username,
+                'password': user.password,
+                'role': user.role,
+                'permissions': user.permissions
+            } for user in self.users], file)
+
+    def load_users(self):
+        try:
+            with open('users.json', 'r') as file:
+                users_data = json.load(file)
+                if not isinstance(users_data, list):
+                    users_data = []
+                self.users = [User(**data) for data in users_data]
+        except (FileNotFoundError, json.JSONDecodeError):
+            self.users = []
+            self.save_users() 
