@@ -2,6 +2,7 @@
 
 import json
 from encryption import SymmetricEncryption
+import logging
 
 class User:
     def __init__(self, username, password, role, permissions=None):
@@ -22,6 +23,10 @@ class AccessControl:
         self.load_users()
 
     def add_user(self, username, password, role, permissions=None):
+        # Verificar se o usuário já existe
+        if any(user.username == username for user in self.users):
+            logging.warning(f'Usuário {username} já existe. Não será adicionado novamente.')
+            return
         user = User(username, password, role, permissions)
         self.users.append(user)
         self.save_users()
