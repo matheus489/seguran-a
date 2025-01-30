@@ -27,26 +27,41 @@ class App:
 
         logging.info('Sistema iniciado')
 
+        # Aplicar tema
+        style = ttk.Style()
+        style.theme_use('clam')
+
+        # Configurar redimensionamento
+        self.root.geometry('800x600')
+        self.root.columnconfigure(0, weight=1)
+        self.root.rowconfigure(0, weight=1)
+
         self.create_widgets()
 
     def create_widgets(self):
-        self.label_username = tk.Label(self.root, text="Nome de Usuário:")
-        self.label_username.pack()
+        # Frame para login
+        login_frame = tk.Frame(self.root, padx=10, pady=10)
+        login_frame.grid(sticky='nsew')
 
-        self.username_entry = tk.Entry(self.root)
-        self.username_entry.pack()
+        self.label_username = tk.Label(login_frame, text="Nome de Usuário:")
+        self.label_username.grid(row=0, column=0, sticky='e')
 
-        self.label_password = tk.Label(self.root, text="Senha:")
-        self.label_password.pack()
+        self.username_entry = tk.Entry(login_frame)
+        self.username_entry.grid(row=0, column=1, padx=5, sticky='ew')
 
-        self.password_entry = tk.Entry(self.root, show='*')
-        self.password_entry.pack()
+        self.label_password = tk.Label(login_frame, text="Senha:")
+        self.label_password.grid(row=1, column=0, sticky='e')
 
-        self.login_button = tk.Button(self.root, text="Login", command=self.authenticate_user)
-        self.login_button.pack()
+        self.password_entry = tk.Entry(login_frame, show='*')
+        self.password_entry.grid(row=1, column=1, padx=5, sticky='ew')
 
-        self.register_button = tk.Button(self.root, text="Registrar", command=self.register_user)
-        self.register_button.pack()
+        self.login_button = tk.Button(login_frame, text="Login", command=self.authenticate_user)
+        self.login_button.grid(row=2, column=0, columnspan=2, pady=10)
+
+        self.register_button = tk.Button(login_frame, text="Registrar", command=self.register_user)
+        self.register_button.grid(row=3, column=0, columnspan=2)
+
+        login_frame.columnconfigure(1, weight=1)
 
     def register_user(self):
         username = self.username_entry.get()
@@ -132,72 +147,64 @@ class App:
         self.encryption_window.title("Criptografia e Descriptografia")
 
         notebook = ttk.Notebook(self.encryption_window)
-        notebook.pack(expand=True, fill='both')
+        notebook.pack(expand=True, fill='both', padx=10, pady=10)
 
         # Aba de Operações
-        operations_frame = ttk.Frame(notebook)
+        operations_frame = ttk.Frame(notebook, padding=10)
         notebook.add(operations_frame, text='Operações')
 
         self.label_text = tk.Label(operations_frame, text="Texto:")
-        self.label_text.pack()
+        self.label_text.pack(anchor='w')
 
         self.text_entry = tk.Entry(operations_frame, width=50)
-        self.text_entry.pack()
+        self.text_entry.pack(pady=5)
 
         self.encrypt_aes_button = tk.Button(operations_frame, text="Criptografar com AES", command=self.encrypt_data_aes)
-        self.encrypt_aes_button.pack()
+        self.encrypt_aes_button.pack(pady=5)
 
         self.decrypt_aes_button = tk.Button(operations_frame, text="Descriptografar com AES", command=self.decrypt_data_aes)
-        self.decrypt_aes_button.pack()
+        self.decrypt_aes_button.pack(pady=5)
 
         self.encrypt_rsa_button = tk.Button(operations_frame, text="Criptografar com RSA", command=self.encrypt_data_rsa)
-        self.encrypt_rsa_button.pack()
+        self.encrypt_rsa_button.pack(pady=5)
 
         self.decrypt_rsa_button = tk.Button(operations_frame, text="Descriptografar com RSA", command=self.decrypt_data_rsa)
-        self.decrypt_rsa_button.pack()
+        self.decrypt_rsa_button.pack(pady=5)
 
         # Aba de Histórico
-        history_frame = ttk.Frame(notebook)
+        history_frame = ttk.Frame(notebook, padding=10)
         notebook.add(history_frame, text='Histórico')
 
         self.history_text = tk.Text(history_frame, height=10, width=50)
         self.history_text.pack()
 
         # Aba de Upload de Arquivo
-        file_upload_frame = ttk.Frame(notebook)
+        file_upload_frame = ttk.Frame(notebook, padding=10)
         notebook.add(file_upload_frame, text='Upload de Arquivo')
 
         self.upload_label = tk.Label(file_upload_frame, text="Selecione um arquivo .txt:")
-        self.upload_label.pack()
+        self.upload_label.pack(anchor='w')
 
         self.file_path_entry = tk.Entry(file_upload_frame, width=50)
-        self.file_path_entry.pack()
+        self.file_path_entry.pack(pady=5)
 
         self.browse_button = tk.Button(file_upload_frame, text="Procurar", command=self.browse_file)
-        self.browse_button.pack()
-
-        self.encrypt_file_aes_button = tk.Button(file_upload_frame, text="Criptografar Arquivo com AES", command=self.encrypt_file_aes)
-        self.encrypt_file_aes_button.pack_forget()
-
-        self.decrypt_file_aes_button = tk.Button(file_upload_frame, text="Descriptografar Arquivo com AES", command=self.decrypt_file_aes)
-        self.decrypt_file_aes_button.pack_forget()
+        self.browse_button.pack(pady=5)
 
         self.encrypt_file_rsa_button = tk.Button(file_upload_frame, text="Criptografar Arquivo com RSA", command=self.encrypt_file_rsa)
-        self.encrypt_file_rsa_button.pack()
+        self.encrypt_file_rsa_button.pack(pady=5)
 
         self.decrypt_file_rsa_button = tk.Button(file_upload_frame, text="Descriptografar Arquivo com RSA", command=self.decrypt_file_rsa)
-        self.decrypt_file_rsa_button.pack()
-
-        self.file_paths = []
+        self.decrypt_file_rsa_button.pack(pady=5)
 
         self.browse_multiple_button = tk.Button(file_upload_frame, text="Procurar Múltiplos", command=self.browse_multiple_files)
-        self.browse_multiple_button.pack()
+        self.browse_multiple_button.pack(pady=5)
 
         self.encrypt_files_rsa_button = tk.Button(file_upload_frame, text="Criptografar Arquivos com RSA", command=self.encrypt_files_rsa)
-        self.encrypt_files_rsa_button.pack()
+        self.encrypt_files_rsa_button.pack(pady=5)
 
         self.decrypt_files_rsa_button = tk.Button(file_upload_frame, text="Descriptografar Arquivos com RSA", command=self.decrypt_files_rsa)
-        self.decrypt_files_rsa_button.pack()
+        self.decrypt_files_rsa_button.pack(pady=5)
 
         self.back_to_login_button = tk.Button(self.encryption_window, text="Voltar para Login", command=self.back_to_login)
         self.back_to_login_button.pack(pady=10)
@@ -243,12 +250,6 @@ class App:
         if file_path:
             self.file_path_entry.delete(0, tk.END)
             self.file_path_entry.insert(0, file_path)
-
-    def encrypt_file_aes(self):
-        pass
-
-    def decrypt_file_aes(self):
-        pass
 
     def encrypt_file_rsa(self):
         file_path = self.file_path_entry.get()
