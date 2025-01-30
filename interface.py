@@ -112,21 +112,34 @@ class App:
         self.permissions_window = tk.Toplevel(self.admin_window)
         self.permissions_window.title("Gerenciar Permissões")
 
-        self.permissions_label = tk.Label(self.permissions_window, text="Configurações de Permissões")
-        self.permissions_label.pack()
+        self.permissions_label = ttk.Label(self.permissions_window, text="Configurações de Permissões")
+        self.permissions_label.pack(pady=10)
 
-        # Exemplo de configuração de permissões
-        self.permissions_text = tk.Text(self.permissions_window, height=10, width=50)
-        self.permissions_text.insert(tk.END, "admin: add_user, remove_user, view_logs, manage_permissions\n")
-        self.permissions_text.insert(tk.END, "user: encrypt, decrypt\n")
-        self.permissions_text.insert(tk.END, "guest: \n")
-        self.permissions_text.pack()
+        # Permissões disponíveis
+        permissions = ['add_user', 'remove_user', 'view_logs', 'manage_permissions', 'encrypt', 'decrypt']
 
-        self.save_permissions_button = tk.Button(self.permissions_window, text="Salvar", command=self.save_permissions)
-        self.save_permissions_button.pack()
+        # Dicionário para armazenar os botões de seleção
+        self.permission_vars = {
+            'admin': {perm: tk.BooleanVar() for perm in permissions},
+            'user': {perm: tk.BooleanVar() for perm in permissions},
+            'guest': {perm: tk.BooleanVar() for perm in permissions}
+        }
+
+        # Criar botões de seleção para cada permissão
+        for role, vars in self.permission_vars.items():
+            role_frame = ttk.LabelFrame(self.permissions_window, text=role.capitalize())
+            role_frame.pack(fill='x', padx=10, pady=5)
+            for perm, var in vars.items():
+                check = ttk.Checkbutton(role_frame, text=perm, variable=var)
+                check.pack(anchor='w')
+
+        self.save_permissions_button = ttk.Button(self.permissions_window, text="Salvar", command=self.save_permissions)
+        self.save_permissions_button.pack(pady=10)
 
     def save_permissions(self):
         # Lógica para salvar as permissões configuradas
+        for role, vars in self.permission_vars.items():
+            self.access_control.permissions[role] = [perm for perm, var in vars.items() if var.get()]
         messagebox.showinfo("Sucesso", "Permissões salvas com sucesso.")
 
     def authenticate_user(self):
