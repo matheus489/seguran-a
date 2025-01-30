@@ -4,6 +4,11 @@ from tkinter import messagebox, filedialog
 from access_control import AccessControl
 from encryption import SymmetricEncryption, AsymmetricEncryption
 import tkinter.ttk as ttk
+import logging
+
+# Configuração do logger
+logging.basicConfig(filename='access.log', level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
 class App:
     def __init__(self, root):
@@ -19,6 +24,8 @@ class App:
         self.access_control.add_user('guest', 'guest', 'guest')
 
         self.registration_requests = []  # Lista de pedidos de cadastro
+
+        logging.info('Sistema iniciado')
 
         self.create_widgets()
 
@@ -63,12 +70,16 @@ class App:
         self.reject_button = tk.Button(self.admin_window, text="Rejeitar", command=self.reject_user)
         self.reject_button.pack()
 
+        self.manage_permissions_button = tk.Button(self.admin_window, text="Gerenciar Permissões", command=self.manage_permissions)
+        self.manage_permissions_button.pack()
+
     def approve_user(self):
         selected_index = self.requests_listbox.curselection()
         if selected_index:
             username, password = self.registration_requests.pop(selected_index[0])
             self.access_control.add_user(username, password, 'user')
             self.requests_listbox.delete(selected_index)
+            logging.info(f'Usuário {username} aprovado')
             messagebox.showinfo("Aprovação", f"Usuário {username} aprovado.")
 
     def reject_user(self):
@@ -76,13 +87,36 @@ class App:
         if selected_index:
             username, _ = self.registration_requests.pop(selected_index[0])
             self.requests_listbox.delete(selected_index)
+            logging.info(f'Usuário {username} rejeitado')
             messagebox.showinfo("Rejeição", f"Usuário {username} rejeitado.")
+
+    def manage_permissions(self):
+        self.permissions_window = tk.Toplevel(self.admin_window)
+        self.permissions_window.title("Gerenciar Permissões")
+
+        self.permissions_label = tk.Label(self.permissions_window, text="Configurações de Permissões")
+        self.permissions_label.pack()
+
+        # Exemplo de configuração de permissões
+        self.permissions_text = tk.Text(self.permissions_window, height=10, width=50)
+        self.permissions_text.insert(tk.END, "admin: add_user, remove_user, view_logs, manage_permissions\n")
+        self.permissions_text.insert(tk.END, "user: encrypt, decrypt\n")
+        self.permissions_text.insert(tk.END, "guest: \n")
+        self.permissions_text.pack()
+
+        self.save_permissions_button = tk.Button(self.permissions_window, text="Salvar", command=self.save_permissions)
+        self.save_permissions_button.pack()
+
+    def save_permissions(self):
+        # Lógica para salvar as permissões configuradas
+        messagebox.showinfo("Sucesso", "Permissões salvas com sucesso.")
 
     def authenticate_user(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
         user = self.access_control.authenticate(username, password)
         if user:
+            logging.info(f'Usuário {username} autenticado com sucesso como {user.role}')
             messagebox.showinfo("Sucesso", f"Usuário {user.username} autenticado como {user.role}.")
             self.current_user = user
             self.root.withdraw()  # Fechar a tela de login
@@ -90,6 +124,7 @@ class App:
                 self.open_admin_panel()
             self.open_encryption_window()
         else:
+            logging.warning(f'Tentativa de login falhou para o usuário {username}')
             messagebox.showerror("Erro", "Usuário ou senha incorretos.")
 
     def open_encryption_window(self):
@@ -152,6 +187,17 @@ class App:
 
         self.decrypt_file_rsa_button = tk.Button(file_upload_frame, text="Descriptografar Arquivo com RSA", command=self.decrypt_file_rsa)
         self.decrypt_file_rsa_button.pack()
+
+        self.file_paths = []
+
+        self.browse_multiple_button = tk.Button(file_upload_frame, text="Procurar Múltiplos", command=self.browse_multiple_files)
+        self.browse_multiple_button.pack()
+
+        self.encrypt_files_rsa_button = tk.Button(file_upload_frame, text="Criptografar Arquivos com RSA", command=self.encrypt_files_rsa)
+        self.encrypt_files_rsa_button.pack()
+
+        self.decrypt_files_rsa_button = tk.Button(file_upload_frame, text="Descriptografar Arquivos com RSA", command=self.decrypt_files_rsa)
+        self.decrypt_files_rsa_button.pack()
 
         self.back_to_login_button = tk.Button(self.encryption_window, text="Voltar para Login", command=self.back_to_login)
         self.back_to_login_button.pack(pady=10)
@@ -223,6 +269,31 @@ class App:
             with open(file_path[:-8] + ".txt", 'wb') as file:
                 file.write(decrypted_data)
             messagebox.showinfo("Sucesso", "Arquivo descriptografado com RSA com sucesso.")
+
+    def browse_multiple_files(self):
+        self.file_paths = filedialog.askopenfilenames(filetypes=[("Text files", "*.txt")])
+        if self.file_paths:
+            self.file_path_entry.delete(0, tk.END)
+            self.file_path_entry.insert(0, "; ".join(self.file_paths))
+
+    def encrypt_files_rsa(self):
+        for file_path in self.file_paths:
+            with open(file_path, 'rb') as file:
+                data = file.read()
+            ciphertext = self.asymmetric_encryption.encrypt(data)
+            with open(file_path + ".rsa.txt", 'wb') as file:
+                file.write(ciphertext)
+        messagebox.showinfo("Sucesso", "Arquivos criptografados com RSA com sucesso.")
+
+    def decrypt_files_rsa(self):
+        for file_path in self.file_paths:
+            if file_path.endswith('.rsa.txt'):
+                with open(file_path, 'rb') as file:
+                    ciphertext = file.read()
+                decrypted_data = self.asymmetric_encryption.decrypt(ciphertext)
+                with open(file_path[:-8] + ".txt", 'wb') as file:
+                    file.write(decrypted_data)
+        messagebox.showinfo("Sucesso", "Arquivos descriptografados com RSA com sucesso.")
 
     def back_to_login(self):
         self.encryption_window.destroy()

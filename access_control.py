@@ -9,6 +9,11 @@ class User:
 class AccessControl:
     def __init__(self):
         self.users = []
+        self.permissions = {
+            'admin': ['add_user', 'remove_user', 'view_logs', 'manage_permissions'],
+            'user': ['encrypt', 'decrypt'],
+            'guest': []
+        }
 
     def add_user(self, username, password, role):
         user = User(username, password, role)
@@ -20,5 +25,5 @@ class AccessControl:
                 return user
         return None
 
-    def authorize(self, user, required_role):
-        return user.role == required_role 
+    def authorize(self, user, action):
+        return action in self.permissions.get(user.role, []) 
