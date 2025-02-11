@@ -258,6 +258,20 @@ class App:
         self.decrypt_files_rsa_button = ttk.Button(file_upload_frame, text="Descriptografar Arquivos com RSA", command=self.decrypt_files_rsa)
         self.decrypt_files_rsa_button.pack(pady=5)
 
+        # Aba de Logs
+        logs_frame = ttk.Frame(notebook, padding=20, style='TFrame')
+        notebook.add(logs_frame, text='Logs')
+
+        self.logs_text = tk.Text(logs_frame, height=10, width=50, font=('Helvetica', 10))
+        self.logs_text.pack()
+
+        if hasattr(self, 'current_user') and self.access_control.authorize(self.current_user, 'view_logs'):
+            with open('access.log', 'r', encoding='latin-1') as log_file:
+                logs = log_file.read()
+                self.logs_text.insert(tk.END, logs)
+        else:
+            self.logs_text.insert(tk.END, 'Você não tem permissão para ver os logs.')
+
         self.back_to_login_button = ttk.Button(self.encryption_window, text="Voltar para Login", command=self.back_to_login)
         self.back_to_login_button.pack(pady=10)
 
