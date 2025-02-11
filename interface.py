@@ -256,6 +256,31 @@ class App:
         else:
             self.logs_text.insert(tk.END, 'Você não tem permissão para ver os logs.')
 
+        # Aba de Gerenciar Usuários
+        manage_users_frame = ttk.Frame(notebook, padding=20, style='TFrame')
+        notebook.add(manage_users_frame, text='Gerenciar Usuários')
+
+        self.manage_users_label = ttk.Label(manage_users_frame, text="Gerenciar Usuários")
+        self.manage_users_label.pack(pady=10)
+
+        self.new_username_entry = ttk.Entry(manage_users_frame, width=30)
+        self.new_username_entry.pack(pady=5)
+        self.new_username_entry.insert(0, 'Nome de Usuário')
+
+        self.new_password_entry = ttk.Entry(manage_users_frame, width=30, show='*')
+        self.new_password_entry.pack(pady=5)
+        self.new_password_entry.insert(0, 'Senha')
+
+        self.add_user_button = ttk.Button(manage_users_frame, text="Adicionar Usuário", command=self.add_user)
+        self.add_user_button.pack(pady=5)
+
+        self.remove_user_entry = ttk.Entry(manage_users_frame, width=30)
+        self.remove_user_entry.pack(pady=5)
+        self.remove_user_entry.insert(0, 'Nome de Usuário para Remover')
+
+        self.remove_user_button = ttk.Button(manage_users_frame, text="Remover Usuário", command=self.remove_user)
+        self.remove_user_button.pack(pady=5)
+
         self.back_to_login_button = ttk.Button(self.encryption_window, text="Voltar para Login", command=self.back_to_login)
         self.back_to_login_button.pack(pady=10)
 
@@ -345,6 +370,36 @@ class App:
                 with open(file_path[:-8] + ".txt", 'wb') as file:
                     file.write(decrypted_data)
         messagebox.showinfo("Sucesso", "Arquivos descriptografados com RSA com sucesso.")
+
+    def add_user(self):
+        if hasattr(self, 'current_user') and self.access_control.authorize(self.current_user, 'add_user'):
+            username = self.new_username_entry.get().strip()
+            password = self.new_password_entry.get().strip()
+            if username and password and username != 'Nome de Usuário' and password != 'Senha':
+                self.access_control.add_user(username, password, 'user')
+                messagebox.showinfo("Sucesso", f"Usuário {username} adicionado com sucesso.")
+                self.new_username_entry.delete(0, tk.END)
+                self.new_password_entry.delete(0, tk.END)
+            else:
+                messagebox.showwarning("Erro", "Nome de usuário e senha são obrigatórios e devem ser diferentes dos padrões.")
+        else:
+            messagebox.showwarning("Acesso Negado", "Você não tem permissão para adicionar usuários.")
+
+    def remove_user(self):
+        if hasattr(self, 'current_user') and self.access_control.authorize(self.current_user, 'remove_user'):
+            username = self.remove_user_entry.get()
+            if username:
+                user = next((u for u in self.access_control.users if u.username == username), None)
+                if user:
+                    self.access_control.users.remove(user)
+                    self.access_control.save_users()
+                    messagebox.showinfo("Sucesso", f"Usuário {username} removido com sucesso.")
+                else:
+                    messagebox.showwarning("Erro", "Usuário não encontrado.")
+            else:
+                messagebox.showwarning("Erro", "Nome de usuário é obrigatório.")
+        else:
+            messagebox.showwarning("Acesso Negado", "Você não tem permissão para remover usuários.")
 
     def back_to_login(self):
         self.encryption_window.destroy()
